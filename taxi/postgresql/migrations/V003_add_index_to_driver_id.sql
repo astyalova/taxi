@@ -1,0 +1,1 @@
+CREATE INDEX idx_orders_driver_id ON Taxi.Orders(driver_id);
