@@ -4,9 +4,15 @@ CREATE TYPE Taxi.status_type AS ENUM (
     'pending', 'driving', 'waiting', 'transporting', 'complete', 'cancel'
 );
 
-CREATE TYPE Taxi.geo  AS (
-    zone_a POINT[],
-    zone_b POINT[] 
+CREATE TABLE IF NOT EXISTS Taxi.Geozone (
+    zone_id INT PRIMARY KEY,
+    coordinates POINT[]
+);
+
+CREATE TABLE IF NOT EXISTS Taxi.Direction (
+    direction_id SERIAL PRIMARY KEY,
+    from_zone_id INT NOT NULL REFERENCES Taxi.geozone(zone_id),
+    to_zone_id   INT NOT NULL REFERENCES Taxi.geozone(zone_id)
 );
 
 
@@ -34,13 +40,20 @@ CREATE TABLE IF NOT EXISTS Taxi.Orders (
     order_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     client_id INT NOT NULL REFERENCES Taxi.Clients(client_id),
     driver_id INT REFERENCES Taxi.Drivers(driver_id),
-    client_price DECIMAL NOT NULL,
     pricing_id INT NOT NULL REFERENCES Taxi.Pricing(pricing_id),
+    client_price DECIMAL NOT NULL,
+    driver_priсe DECIMAL NOT NULL,
     distance_km DECIMAL NOT NULL, 
     pickup_time TIME,
-    dir geo NOT NULL,
+    direction_id INT NOT NULL REFERENCES Taxi.Direction(direction_id),
     from_a point,
     to_b point, 
     order_date DATE DEFAULT CURRENT_DATE,
     status Taxi.status_type NOT NULL DEFAULT 'pending'
 );
+
+CREATE INDEX idx_orders_client_id ON Taxi.Orders(client_id);
+
+CREATE INDEX idx_orders_driver_id ON Taxi.Orders(driver_id);
+
+CREATE INDEX idx_orders_status ON Taxi.Orders(status);

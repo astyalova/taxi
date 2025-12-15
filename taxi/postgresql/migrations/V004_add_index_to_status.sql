@@ -1,1 +1,0 @@
-CREATE INDEX idx_orders_status ON Taxi.Orders(status);
