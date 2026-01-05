@@ -32,3 +32,42 @@ services:
           PGPASSWORD=$$POSTGRES_PASSWORD psql -h db -U $$POSTGRES_USER -d $$POSTGRES_DB -f $$f;
         done
       "
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  app:
+    build: ./app
+    depends_on:
+      - kafka
+      - db
+    environment:
+      DB_DSN: postgres://mem:mem@db:5432/orders_db
+      KAFKA_BOOTSTRAP: kafka:9092
+  creator:
+    build: ./app
+    environment:
+      DB_DSN: postgres://mem:mem@postgres:5432/orders_db
+      WORKER_TYPE: creator
+    depends_on:
+      - db
+    new_status:
+      build: ./app
+      environment:
+        DB_DSN: postgres://mem:mem@postgres:5432/orders_db
+        WORKER_TYPE: new_status
+      depends_on:
+        - db
+  check_orders_worker:
+    build: ./app
+    command: python check_driver_orders.py
+    depends_on:
+      - db
